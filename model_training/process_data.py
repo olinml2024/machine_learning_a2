@@ -1,19 +1,20 @@
 import numpy as np  # linear algebra
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow_hub as hub
-import cv2
+from PIL import Image
+
+# import cv2
 import json
-import pickle
 import shutil
 import os
 from pathlib import Path
 
 NUM_TEST_IMAGES = 100
 
-testing_dir = Path(__file__).parent / "test_data"
-base_training_dir = Path(__file__).parent / "train_data"
+testing_images_dir = Path(__file__).parent.parent / "model_testing/test_images"
+testing_data_dir = Path(__file__).parent.parent / "model_testing/test_data"
+base_training_dir = Path(__file__).parent / "train_images"
 
 desserts = [
     "apple_pie",
@@ -43,46 +44,51 @@ desserts = [
 
 
 def generate_test_data():
-    if os.path.isdir(testing_dir):
-        shutil.rmtree(testing_dir)
+    # if os.path.isdir(testing_images_dir):
+    #     shutil.rmtree(testing_images_dir)
 
-    for file in os.walk(Path(__file__).parent / "images"):
-        if "images/" in file[0]:
-            folder_name = file[0].split("/")[-1]
-            if folder_name in desserts:
-                os.makedirs(f"{testing_dir}/{folder_name}", exist_ok=True)
-                curr_img = 0
-                for filename in file[2]:
-                    shutil.move(
-                        f"{file[0]}/{filename}",
-                        f"{testing_dir}/{folder_name}/{filename}",
-                    )
-                    curr_img += 1
-                    if curr_img >= NUM_TEST_IMAGES:
-                        break
+    # for file in os.walk(Path(__file__).parent / "images"):
+    #     if "images/" in file[0]:
+    #         folder_name = file[0].split("/")[-1]
+    #         if folder_name in desserts:
+    #             os.makedirs(f"{testing_images_dir}/{folder_name}", exist_ok=True)
+    #             curr_img = 0
+    #             for filename in file[2]:
+    #                 shutil.move(
+    #                     f"{file[0]}/{filename}",
+    #                     f"{testing_images_dir}/{folder_name}/{filename}",
+    #                 )
+    #                 curr_img += 1
+    #                 if curr_img >= NUM_TEST_IMAGES:
+    #                     break
 
     # Store images
     num = 0
     testing_data = np.zeros([NUM_TEST_IMAGES * len(desserts), 250, 250, 3])
     testing_labels = {"labels": {}}
 
-    for file in os.walk(testing_dir):
-        if file[0].startswith(f"{testing_dir}/"):
+    for file in os.walk(testing_images_dir):
+        if file[0].startswith(f"{testing_images_dir}/"):
             folder_name = file[0].split("/")[-1]
             if folder_name in desserts:
                 for filename in file[2]:
-                    img = cv2.imread(f"{testing_dir}/{folder_name}/{filename}")
-                    testing_data[num] = cv2.cvtColor(
-                        cv2.resize(img, [250, 250]), cv2.COLOR_BGR2RGB
-                    )
+                    img = Image.open(f"{testing_images_dir}/{folder_name}/{filename}")
+                    img = img.resize([250, 250])
+                    testing_data[num] = np.asarray(img.resize([250, 250]))
                     testing_labels["labels"][num] = folder_name
                     num += 1
                     print(f"{num}/{NUM_TEST_IMAGES*len(desserts)}")
 
-    with open(Path(__file__).parent / "testing_labels.json", "w") as file:
+    # Testing data needs to be split into 2 because it exceeds the 2.5 GB
+    # limit for GitHub LFS
+    testing_data_1 = testing_data[: (NUM_TEST_IMAGES * len(desserts)) // 2, :, :, :]
+    testing_data_2 = testing_data[(NUM_TEST_IMAGES * len(desserts)) // 2 :, :, :, :]
+
+    with open(testing_data_dir / "testing_labels.json", "w") as file:
         json.dump(testing_labels, file, indent=4)
 
-    np.save(Path(__file__).parent / "testing_data.npy", testing_data)
+    np.save(testing_data_dir / "testing_data_1.npy", testing_data_1)
+    np.save(testing_data_dir / "testing_data_2.npy", testing_data_2)
 
 
 def generate_train_data():
@@ -154,12 +160,11 @@ def train_model():
         model_ResNet.summary()
         tf.keras.utils.plot_model(model_ResNet)
         model_ResNet.fit(train_data, epochs=10, verbose=1)
-        model_ResNet.save(
-            Path(__file__).parent.parent / f"data/model_weights/{model_name}.keras"
-        )
+        model_ResNet.save(Path(__file__).parent / f"model_weights/{model_name}.keras")
 
 
 if __name__ == "__main__":
-    # generate_test_data()
+    generate_test_data()
     # generate_train_data()
-    train_model()
+    # train_model()
+    pass
