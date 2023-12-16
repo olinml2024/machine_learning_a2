@@ -3,6 +3,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
 import json
+from PIL import Image
+import matplotlib.pyplot as plt
+
 
 TEST_DATA_DIR = Path(__file__).parent / "test_data"
 TEST_RESULTS_DIR = Path(__file__).parent / "results"
@@ -97,6 +100,36 @@ def test_model(model_name):
 
     with open(TEST_RESULTS_DIR / f"{model_name}.json", "w") as file:
         json.dump(results, file, indent=4)
+
+
+def test_model_on_image(model_name, path_to_image: Path, visualize=False):
+    ResNet_V2_50 = "https://tfhub.dev/google/imagenet/resnet_v2_50/classification/5"
+
+    food_classifier = tf.keras.Sequential(
+        [
+            hub.KerasLayer(
+                ResNet_V2_50,
+                trainable=False,
+                input_shape=(250, 250, 3),
+                name="Resnet_V2_50",
+            ),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(23, activation="softmax", name="Output_layer"),
+        ]
+    )
+    food_classifier.load_weights(MODEL_WEIGHTS_DIR / f"{model_name}.ckpt")
+
+    img = np.zeros([1, 250, 250, 3], dtype=float)
+    img[0] = np.asarray(Image.open(path_to_image).resize([250, 250])) / 255
+
+    if visualize:
+        plt.imshow(img[0])
+        plt.show()
+
+    prediction = np.argmax(food_classifier.predict(img))
+    food_label = CLASS_INDICES_REVERSED[prediction]
+
+    return prediction, food_label
 
 
 if __name__ == "__main__":

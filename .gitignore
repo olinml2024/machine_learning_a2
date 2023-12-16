@@ -1,6 +1,7 @@
 model_testing/test_images
 model_training/train_images
 *.jpg
+*/__pycache__/*
 
 # These files are too large to be pushed
 *.zip
