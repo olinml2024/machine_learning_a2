@@ -41,12 +41,14 @@ NUM_IMAGES_PER_CLASS = 100
 
 
 def test_model(model_name):
-    num_images = (NUM_IMAGES_PER_CLASS * len(CLASS_INDICES.keys())) // 2
-    test_imgs = np.zeros([num_images, 250, 250, 3], dtype=int)
-    test_imgs[:num_images, :, :, :] = np.load(TEST_DATA_DIR / "testing_data_1.npy")
-    # test_imgs[num_images // 2 :, :, :, :] = np.load(
-    #     TEST_DATA_DIR / "testing_data_2.npy"
-    # )
+    num_images = NUM_IMAGES_PER_CLASS * len(CLASS_INDICES.keys())
+    test_imgs = np.zeros([num_images, 250, 250, 3])
+    test_imgs[: num_images // 2, :, :, :] = (
+        np.load(TEST_DATA_DIR / "testing_data_1.npy") / 255
+    )
+    test_imgs[num_images // 2 :, :, :, :] = (
+        np.load(TEST_DATA_DIR / "testing_data_2.npy") / 255
+    )
     ResNet_V2_50 = "https://tfhub.dev/google/imagenet/resnet_v2_50/classification/5"
 
     food_classifier = tf.keras.Sequential(
@@ -61,10 +63,8 @@ def test_model(model_name):
             tf.keras.layers.Dense(23, activation="softmax", name="Output_layer"),
         ]
     )
-    food_classifier.load_weights(
-        "/home/achakraborty/Documents/machine_learning_a1/model0_weights.keras"
-    )
-    
+    food_classifier.load_weights(MODEL_WEIGHTS_DIR / f"{model_name}.ckpt")
+
     with open(TEST_DATA_DIR / "testing_labels.json", "r") as file:
         gt_label_mappings = json.load(file)["labels"]
     gt_labels = [
@@ -100,4 +100,5 @@ def test_model(model_name):
 
 
 if __name__ == "__main__":
-    test_model(MODEL_NAMES[0])
+    for model in MODEL_NAMES:
+        test_model(model)
