@@ -11,4 +11,4 @@ The setup we used was VSCode with Python 3.8.18. We installed everything in a co
 We ran the VSCode environment in a dual-booted Ubuntu 22.04 environment. You shouldn't need much compute to run this. Feel free to contact either developer of this code with any questions! 
 
 ## Module Information
-This notebook is part of a mutli-week module in the Machine Learning course. Details about the module can be found here. 
+This notebook is part of a mutli-week module in the Machine Learning course. Details about the module can be found [here](https://github.com/jes-bro/machine_learning_a1/blob/main/AI_Society_Final.pdf). 
