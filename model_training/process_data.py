@@ -1,3 +1,11 @@
+"""
+This file is used to generate training and test image datasets based on the
+kaggle food classification competition (https://www.kaggle.com/datasets/kmader/food41).
+As a requirement, this dataset must be extracted in the directory parallel to this file
+(ie. ~/images/*). If you would like to place these images in a different directory, update
+`kaggle_dataset_dir` accordingly to point to that location.
+"""
+
 import numpy as np  # linear algebra
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -12,6 +20,7 @@ from pathlib import Path
 
 NUM_TEST_IMAGES = 100
 
+kaggle_dataset_dir = Path(__file__).parent / "images"
 testing_images_dir = Path(__file__).parent.parent / "model_testing/test_images"
 testing_data_dir = Path(__file__).parent.parent / "model_testing/test_data"
 base_training_dir = Path(__file__).parent / "train_images"
@@ -44,25 +53,31 @@ desserts = [
 
 
 def generate_test_data():
-    # if os.path.isdir(testing_images_dir):
-    #     shutil.rmtree(testing_images_dir)
+    """
+    This function extracts test images from `kaggle_dataset_dir` and moves them
+    into their respective folders in `testing_images_dir`. There will be
+    `NUM_IMAGES` of each dessert class.
+    """
+    for file in os.walk(kaggle_dataset_dir):
+        if "images/" in file[0]:
+            folder_name = file[0].split("/")[-1]
+            if folder_name in desserts:
+                os.makedirs(f"{testing_images_dir}/{folder_name}", exist_ok=True)
+                curr_img = 0
+                # Move files into the testing dataset directory until enough
+                # images have been selected
+                for filename in file[2]:
+                    shutil.move(
+                        f"{file[0]}/{filename}",
+                        f"{testing_images_dir}/{folder_name}/{filename}",
+                    )
+                    curr_img += 1
+                    if curr_img >= NUM_TEST_IMAGES:
+                        break
 
-    # for file in os.walk(Path(__file__).parent / "images"):
-    #     if "images/" in file[0]:
-    #         folder_name = file[0].split("/")[-1]
-    #         if folder_name in desserts:
-    #             os.makedirs(f"{testing_images_dir}/{folder_name}", exist_ok=True)
-    #             curr_img = 0
-    #             for filename in file[2]:
-    #                 shutil.move(
-    #                     f"{file[0]}/{filename}",
-    #                     f"{testing_images_dir}/{folder_name}/{filename}",
-    #                 )
-    #                 curr_img += 1
-    #                 if curr_img >= NUM_TEST_IMAGES:
-    #                     break
-
-    # Store images
+    # In addition to storing the images, we store numpy representations of the
+    # testing dataset for ease of passing each image into the trained tensorflow
+    # models.
     num = 0
     testing_data = np.zeros([NUM_TEST_IMAGES * len(desserts), 250, 250, 3])
     testing_labels = {"labels": {}}
@@ -79,11 +94,13 @@ def generate_test_data():
                     num += 1
                     print(f"{num}/{NUM_TEST_IMAGES*len(desserts)}")
 
-    # Testing data needs to be split into 2 because it exceeds the 2.5 GB
-    # limit for GitHub LFS
+    # Testing data needs to be split into 2 due to intermittent issues loading the
+    # size of each file into RAM during testing.
     testing_data_1 = testing_data[: (NUM_TEST_IMAGES * len(desserts)) // 2, :, :, :]
     testing_data_2 = testing_data[(NUM_TEST_IMAGES * len(desserts)) // 2 :, :, :, :]
 
+    # This JSON represents the ground truth label of each testing image, mapping
+    # the idx as they appear in the npy files with the corresponding label.
     with open(testing_data_dir / "testing_labels.json", "w") as file:
         json.dump(testing_labels, file, indent=4)
 
@@ -92,28 +109,36 @@ def generate_test_data():
 
 
 def generate_train_data():
+    """
+    This function extracts training images for each respective model. To artificially
+    inject diversity between the performance of each model, they are trained on a
+    different number of images per dessert class, and have no overlapping images
+    between eachother.
+    """
+
+    # Three different schemes for determining the number of images per class for
+    # each model.
     num_images_by_model = [
         [int(x) for x in np.random.choice(range(100, 500), len(desserts))],
         [int(x) for x in np.random.choice([200, 400], len(desserts))],
         [int(x) for x in np.random.choice([300], len(desserts))],
     ]
+
     for model_idx, num_images in enumerate(num_images_by_model):
         num_images_by_dessert = {
             desserts[i]: num_images[i] for i in range(len(desserts))
         }
 
         training_dir = base_training_dir / f"model{model_idx}"
-        if os.path.isdir(training_dir):
-            shutil.rmtree(training_dir)
 
-        for file in os.walk(Path(__file__).parent / "images"):
+        for file in os.walk(kaggle_dataset_dir):
             if "images/" in file[0]:
                 folder_name = file[0].split("/")[-1]
                 if folder_name in desserts:
                     os.makedirs(f"{training_dir}/{folder_name}", exist_ok=True)
                     curr_img = 0
                     for filename in file[2]:
-                        shutil.copy(
+                        shutil.move(
                             f"{file[0]}/{filename}",
                             f"{training_dir}/{folder_name}/{filename}",
                         )
@@ -123,6 +148,12 @@ def generate_train_data():
 
 
 def train_model():
+    """
+    This function is used to train each tensorflow model based on their
+    respective training data. For convenience, this functionality has
+    been copied into `train_food_classifiers.ipynb` to be compatible
+    with Google Colab.
+    """
     for model_name in ["model0", "model1", "model2"]:
         training_dir = base_training_dir / model_name
         train_datagen = ImageDataGenerator(rescale=1.0 / 255, validation_split=0.0)
@@ -158,13 +189,11 @@ def train_model():
         )
 
         model_ResNet.summary()
-        tf.keras.utils.plot_model(model_ResNet)
         model_ResNet.fit(train_data, epochs=10, verbose=1)
         model_ResNet.save(Path(__file__).parent / f"model_weights/{model_name}.keras")
 
 
 if __name__ == "__main__":
     generate_test_data()
-    # generate_train_data()
-    # train_model()
-    pass
+    generate_train_data()
+    train_model()
