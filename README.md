@@ -1,6 +1,6 @@
 # Machine Learning: Module 1 Assignment 1
 
-This serves as the first assignment for Olin College's Machine Learning class.
+This serves as the first assignment for Olin College's Machine Learning class. The assignment itself is contained within the A1.ipynb notebook. Everything else is utilitzed by that notebook and the assignment doesn't involve editing any of the other files in this repository. 
 
 ## Dependencies
 Matplotlib, tensorflow, json and collections need to be installed. Additionally, python and jupyter notebook extensions must be installed in your VSCode environment.
