@@ -11,6 +11,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow_hub as hub
 from PIL import Image
+import tf_keras as tfk
 
 # import cv2
 import json
@@ -167,7 +168,7 @@ def train_model():
         )
         ResNet_V2_50 = "https://tfhub.dev/google/imagenet/resnet_v2_50/classification/5"
 
-        model_ResNet = tf.keras.Sequential(
+        model_ResNet = tfk.Sequential(
             [
                 hub.KerasLayer(
                     ResNet_V2_50,
@@ -175,16 +176,16 @@ def train_model():
                     input_shape=(250, 250, 3),
                     name="Resnet_V2_50",
                 ),
-                tf.keras.layers.Flatten(),
-                tf.keras.layers.Dense(
+                tfk.layers.Flatten(),
+                tfk.layers.Dense(
                     len(desserts), activation="softmax", name="Output_layer"
                 ),
             ]
         )
 
         model_ResNet.compile(
-            optimizer=tf.keras.optimizers.Adam(),
-            loss=tf.keras.losses.CategoricalCrossentropy(),
+            optimizer=tfk.optimizers.Adam(),
+            loss=tfk.losses.CategoricalCrossentropy(),
             metrics=["accuracy"],
         )
 
