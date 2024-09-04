@@ -2,6 +2,7 @@ import torch
 from torchvision import datasets, models, transforms
 import gdown
 import itertools
+import gc
 
 
 def load_models():
@@ -23,6 +24,9 @@ def load_models():
     return [model0, model1, model2]
 
 def get_model_preds(model, transforms):
+    gc.collect()
+    torch.cuda.empty_cache()
+    gc.collect()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     test_set = datasets.ImageFolder('test_data/images', transforms)
     test_set_loader = torch.utils.data.DataLoader(test_set, batch_size=8, shuffle=True, num_workers=4)
