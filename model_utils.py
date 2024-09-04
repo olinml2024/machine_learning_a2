@@ -10,17 +10,17 @@ def load_models():
     gdown.download(id="1MQT3EyNmKPsLXRX8r39x8netudx2kBFt", output="model0.pth")
     model0 = models.resnet18(weights="IMAGENET1K_V1")
     model0.fc = torch.nn.Linear(model0.fc.in_features, 23)
-    model0.load_state_dict(torch.load("model0.pth"))
+    model0.load_state_dict(torch.load("model0.pth", map_location=torch.device('cpu')))
 
     gdown.download(id="1BvyuAafFiuiwR4vFRJOCgzeVJTpwsLMq", output="model1.pth")
     model1 = models.resnet50(weights="IMAGENET1K_V1")
     model1.fc = torch.nn.Linear(model1.fc.in_features, 23)
-    model1.load_state_dict(torch.load("model1.pth"))
+    model1.load_state_dict(torch.load("model1.pth", map_location=torch.device('cpu')))
 
     gdown.download(id="1Yzpmg0WIQInrHiUuQwJVaw9mjFDBp6JK", output="model2.pth")
     model2 = models.efficientnet_v2_l(weights="IMAGENET1K_V1")
     model2.classifier[1] = torch.nn.Linear(1280, 23)
-    model2.load_state_dict(torch.load("model2.pth"))
+    model2.load_state_dict(torch.load("model2.pth", map_location=torch.device('cpu')))
     return [model0, model1, model2]
 
 def get_model_preds(model, transforms):
