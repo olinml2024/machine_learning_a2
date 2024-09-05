@@ -50,3 +50,18 @@ def get_model_preds(model, transforms):
     model_ground_truth_labels = list(itertools.chain(*batch_labels))
     model_preds = list(itertools.chain(*batch_preds))
     return model_ground_truth_labels, model_preds
+
+def test_on_image(model, image):
+    no_alterations = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    model.eval()
+
+    with torch.no_grad():
+        as_tensor = no_alterations(image)
+        return torch.argmax(model(as_tensor.unsqueeze(0).to(device))).item()
