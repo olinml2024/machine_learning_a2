@@ -32,21 +32,23 @@ def get_model_preds(model, transforms):
     test_set_loader = torch.utils.data.DataLoader(test_set, batch_size=8, shuffle=True, num_workers=4)
 
     model = model.to(device)
+    model.eval()
 
     num_test = len(test_set)
     batch_preds = []
     batch_labels = []
-    total_processed = 0
-    for inputs, labels in test_set_loader:
-        inputs = inputs.to(device)
-        outputs = model(inputs)
-        _, preds = torch.max(outputs, 1)
-        preds = preds.cpu().detach().numpy()
-        batch_labels.append(labels.numpy())
-        batch_preds.append(preds)
-        total_processed += preds.shape[0]
-        if total_processed % 96 == 0:
-            print(f"{total_processed}/{num_test}")
+    with torch.no_grad():
+        total_processed = 0
+        for inputs, labels in test_set_loader:
+            inputs = inputs.to(device)
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            preds = preds.cpu().detach().numpy()
+            batch_labels.append(labels.numpy())
+            batch_preds.append(preds)
+            total_processed += preds.shape[0]
+            if total_processed % 96 == 0:
+                print(f"{total_processed}/{num_test}")
     model_ground_truth_labels = list(itertools.chain(*batch_labels))
     model_preds = list(itertools.chain(*batch_preds))
     return model_ground_truth_labels, model_preds
